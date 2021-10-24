@@ -1,15 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import java.lang.*?>
 <?import java.util.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="MainController"
-            prefHeight="400.0" prefWidth="600.0">
 
-    <Label fx:id="label" text="Label"/>
-</AnchorPane>
+<VBox id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <MenuBar>
+        <menus>
+          <Menu id="pref" mnemonicParsing="false" text="Preferences">
+            <items>
+              <MenuItem id="certs" mnemonicParsing="false" text="Certificates" />
+            </items>
+          </Menu>
+          <Menu id="view" mnemonicParsing="false" text="View">
+            <items>
+              <MenuItem id="full" mnemonicParsing="false" text="Fullscreen" />
+                  <MenuItem id="comp" mnemonicParsing="false" text="Compact" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="Help">
+            <items>
+              <MenuItem mnemonicParsing="false" text="About" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+      <VBox id="content" prefHeight="200.0" prefWidth="100.0" spacing="5.0" VBox.vgrow="ALWAYS">
+         <children>
+            <Button id="select" contentDisplay="CENTER" mnemonicParsing="false" text="Select Files..." VBox.vgrow="NEVER" />
+            <ListView id="FileList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+            <HBox id="outprow" alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
+               <children>
+                  <Button id="outp" contentDisplay="CENTER" mnemonicParsing="false" text="Output to..." />
+                  <TextField id="dirtext" maxWidth="1.7976931348623157E308" promptText="input directory" HBox.hgrow="ALWAYS" />
+               </children>
+            </HBox>
+            <HBox id="signrow" alignment="CENTER_LEFT" fillHeight="false" spacing="10.0" VBox.vgrow="NEVER">
+               <children>
+                  <Button id="sign" contentDisplay="CENTER" defaultButton="true" mnemonicParsing="false" text="Sign" />
+                  <ProgressBar id="progbar" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" progress="0.0" HBox.hgrow="ALWAYS" />
+               </children>
+            </HBox>
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+      </VBox>
+   </children>
+</VBox>
