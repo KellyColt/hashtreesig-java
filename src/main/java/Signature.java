@@ -1,23 +1,14 @@
-
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.security.cert.CertificateEncodingException;
+import java.security.InvalidKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.util.*;
+import java.util.Base64;
 
 public class Signature {
     private static final int test_nr = 3;
-    private static final Base64.Decoder dec = Base64.getDecoder();
-    private static final Base64.Encoder enc = Base64.getEncoder();
 
-    public static void main(String[] args) throws CertificateException, IOException {
+    public static void main(String[] args) throws CertificateException, InvalidKeyException {
         System.out.println("Hello World");
 
         File certFile = new File("pki/signer_cert.der");
@@ -46,28 +37,22 @@ public class Signature {
 
         byte[] msg = "Hallo, ich bin Nachricht Nr. 2".getBytes(StandardCharsets.UTF_8);
 
-        ByteArrayOutputStream jsonstrm = new ByteArrayOutputStream();
-
-        jsonstrm.write(merkle.header());
-        jsonstrm.write(".".getBytes(StandardCharsets.UTF_8));
-        jsonstrm.write(Base64.getEncoder().encode(msg));
-        jsonstrm.write(".".getBytes(StandardCharsets.UTF_8));
-        jsonstrm.write(merkle.signature(msg));
-
-        byte[] json_web_signature = jsonstrm.toByteArray();
-
-        System.out.println(new String(json_web_signature, StandardCharsets.UTF_8));
-
-        String json_string = new String(json_web_signature, StandardCharsets.UTF_8);
+        String json_string = merkle.json_web_signature(msg);
+        System.out.println(json_string);
         String[] b64strings = json_string.split("\\.");
-        ArrayList<byte[]> b64bytes = new ArrayList<>();
+
         for (String s : b64strings) {
 
-            byte[] str = Base64.getDecoder().decode(
-                    s.getBytes(StandardCharsets.UTF_8)
+            String str = new String(
+                    Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8)),
+                    StandardCharsets.UTF_8
             );
-            b64bytes.add(str);
-            System.out.println(new String(str, StandardCharsets.UTF_8));
+
+            System.out.println(str);
         }
+        if (HashTree.verifyjws(json_string))
+            System.out.println("signature verified");
+        else System.out.println("verification failed");
+
     }
 }
