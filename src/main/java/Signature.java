@@ -5,9 +5,19 @@ import java.security.InvalidKeyException;
 import java.security.cert.CertificateException;
 import java.util.Base64;
 
+/**
+ * Currently a debugging executable class
+ * @author F. Krause, SMSB HOST
+ */
 public class Signature {
     private static final int test_nr = 3;
 
+    /**
+     * runnable
+     * @param args parameters
+     * @throws CertificateException thrown if I fucked up the certificate encoding somewhere
+     * @throws InvalidKeyException thrown if the certificate itself is fucked
+     */
     public static void main(String[] args) throws CertificateException, InvalidKeyException {
         System.out.println("Hello World");
 

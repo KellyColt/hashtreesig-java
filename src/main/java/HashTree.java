@@ -13,17 +13,29 @@ import java.util.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+// @TODO clean up and split
+/**
+ * Hash Tree class
+ * @author F. Krause, SMSB HOST
+ */
 public class HashTree {
     public boolean closed;
     private ArrayList<String> leaves;
     private ArrayList<ArrayList<byte[]>> nodes;
     public byte[] ecdsa_sig;
     private ECPrivateKey key;
-    private Certificate cert;
+    private final Certificate cert;
     private MessageDigest digest;
-    private SecureRandom srand;
-    private Base64.Encoder b64enc;
+    private final SecureRandom srand;
+    private final Base64.Encoder b64enc;
 
+    /**
+     * only Constructor
+     * @param keyFile File Object for private key
+     * @param certFile File Object for certificate
+     * @throws IOException thrown if key file cannot be read
+     * @throws CertificateException thrown if certificate cannot be parsed
+     */
     public HashTree(File keyFile, File certFile) throws IOException, CertificateException {
         this.closed = false;
         this.leaves = new ArrayList<>();
@@ -52,6 +64,11 @@ public class HashTree {
         }
     }
 
+    /**
+     * adds a bytearray of data to sign
+     * @param msg data to sign
+     * @throws IllegalStateException thrown if Tree is already closed and signed
+     */
     public void add(byte[] msg) throws IllegalStateException{
         if (this.closed) throw new IllegalStateException("this hashtree is closed");
         byte[] hash = digest.digest(msg);
@@ -62,6 +79,10 @@ public class HashTree {
         nodes.get(0).add(token);
     }
 
+    /**
+     * closes and generates root signature
+     * @throws IllegalStateException thrown if tree is already closed
+     */
     public void sign() throws IllegalStateException{
         if (this.closed) throw new IllegalStateException("this tree is already closed");
         ArrayList<byte[]> l0 = nodes.get(0);
@@ -139,6 +160,11 @@ public class HashTree {
         this.closed = true;
     }
 
+    /**
+     * generate string of hex values that represents the byte array
+     * @param bytes input
+     * @return output
+     */
     public String bytesToHex(byte[] bytes) {
         StringBuilder buf = new StringBuilder();
         for (byte b : bytes) {
@@ -148,6 +174,10 @@ public class HashTree {
         return buf.toString();
     }
 
+    /**
+     * JSON data for Signature header (algorithm, and certificate with Base64 Encoding)
+     * @return bytearray of JSON String using UTF-8, encoded in Base64
+     */
     public byte[] header() {
         try {
             JSONObject header = new JSONObject()
@@ -168,6 +198,11 @@ public class HashTree {
         }
     }
 
+    /**
+     * convert bytearray to Base-64 Encoded UTF-String representation
+     * @param bytes raw data
+     * @return String representation (UTF-8) of Base64-Encoded Data
+     */
     public  String b64utfstr(byte[] bytes) {
         return new String(
                 b64enc.encode(bytes),
@@ -175,6 +210,15 @@ public class HashTree {
         );
     }
 
+    /**
+     * JSON data of signature
+     * (Sibling Node Hashes on path to root, individually b64-encoded, with a plaintext '-' if left sibling,
+     * root signature with Base64 encoding) for the given message
+     * @param msg raw data of leaf node within this Tree
+     * @return bytearray of JSON String using UTF-8, encoded in Base64 (again)
+     * @throws IllegalStateException thrown if this Tree has yet to be closed and signed
+     * @throws IllegalArgumentException thrown if the given message cannot be found in this Tree's leaves
+     */
     public byte[] signature(byte[] msg) throws IllegalStateException, IllegalArgumentException {
         if(!this.closed) throw new IllegalStateException("Hashtree is not signed yet");
 
@@ -237,6 +281,13 @@ public class HashTree {
         return jsonstrm.toString(StandardCharsets.UTF_8);
     }
 
+    /**
+     * verification function
+     * @param jws UTF-8 String in header.data.signature format
+     * @return true if verification successful
+     * @throws CertificateException thrown if certificate cannot be parsed
+     * @throws InvalidKeyException thrown if public key generated from certificate judged invalid
+     */
     public static boolean verifyjws(String jws) throws CertificateException, InvalidKeyException {
         String[] split = jws.split("\\.");
         Base64.Decoder dec = Base64.getDecoder();
@@ -271,6 +322,16 @@ public class HashTree {
         }
     }
 
+    /**
+     * internal function to verify signatures
+     * @param x5c certificate in raw byte data (unencoded)
+     * @param path Array of bytearrays containing raw sibling node hashes along path to root (unencoded)
+     * @param msg raw message data
+     * @param sig raw data of the root signature (unencoded)
+     * @return true if verification successful
+     * @throws CertificateException thrown if certificate cannot be parsed
+     * @throws InvalidKeyException thrown if public key generated from certificate judged invalid
+     */
     private static boolean verifysig(byte[] x5c, byte[][] path, byte[] msg, byte[] sig) throws CertificateException, InvalidKeyException {
 
         X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(x5c));
