@@ -1,8 +1,14 @@
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.util.Base64URL;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.cert.CertificateException;
+import java.text.ParseException;
 import java.util.Base64;
 
 /**
@@ -18,7 +24,7 @@ public class Signature {
      * @throws CertificateException thrown if I fucked up the certificate encoding somewhere
      * @throws InvalidKeyException thrown if the certificate itself is fucked
      */
-    public static void main(String[] args) throws CertificateException, InvalidKeyException {
+    public static void main(String[] args) throws CertificateException, InvalidKeyException, ParseException, JOSEException {
         System.out.println("Hello World");
 
         File certFile = new File("pki/signer_cert.der");
@@ -64,5 +70,32 @@ public class Signature {
             System.out.println("signature verified");
         else System.out.println("verification failed");
 
+        Base64.Decoder dec = Base64.getDecoder();
+        Base64.Encoder urlenc = Base64.getUrlEncoder();
+
+        JWSObject jws = new JWSObject(
+                new Base64URL(
+                        new String(
+                                urlenc.encode(
+                                        dec.decode(
+                                                merkle.header()
+                                        )
+                                ), StandardCharsets.UTF_8
+                        )
+                ), new Payload(msg)
+                , new Base64URL(
+                        new String(
+                                urlenc.encode(
+                                        dec.decode(
+                                                merkle.signature(
+                                                        msg
+                                                )
+                                        )
+                                )
+                        )
+                )
+        );
+        if (jws.verify(new HTES256Verifier())) System.out.println("bruh");
+        else System.out.println("no bruh");
     }
 }

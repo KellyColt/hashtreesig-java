@@ -182,12 +182,12 @@ public class HashTree {
         try {
             JSONObject header = new JSONObject()
                     .put("alg", "HTES256")
-                    .put("x5c", new String(
+                    .put("x5c", new String[]{new String(
                             b64enc.encode(
                                     this.cert.getEncoded()
                             ),
                             StandardCharsets.UTF_8
-                    ));
+                    )});
 
             return b64enc.encode(header.toString().getBytes(StandardCharsets.UTF_8));
         } catch (CertificateException e) {
@@ -299,6 +299,11 @@ public class HashTree {
             JSONObject signature = new JSONObject(new String(dec.decode(split[2].getBytes(StandardCharsets.UTF_8))));
 
             byte[] sig = dec.decode(signature.getString("ecdsa_sig").getBytes(StandardCharsets.UTF_8));
+            byte[] cert = dec.decode(
+                    ((String) header.getJSONArray("x5c")
+                            .get(0)
+                    ).getBytes(StandardCharsets.UTF_8)
+            );
 
             List<Object> pathlist = signature.getJSONArray("ht_path").toList();
             String[] b64path = Arrays.copyOf(pathlist.toArray(new Object[0]), pathlist.size(), String[].class);
@@ -308,7 +313,7 @@ public class HashTree {
                 decpath[i] = dec.decode(b64path[i].getBytes(StandardCharsets.UTF_8));
 
             return(verifysig(
-                    dec.decode(header.getString("x5c").getBytes(StandardCharsets.UTF_8)),
+                    cert,
                     decpath,
                     dec.decode(split[1].getBytes(StandardCharsets.UTF_8)),
                     sig)
