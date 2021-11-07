@@ -1,17 +1,25 @@
-import java.io.*;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.util.Base64;
+import com.nimbusds.jose.util.Base64URL;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.*;
 import java.security.Signature;
-import java.security.cert.*;
+import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.interfaces.ECPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.*;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.text.ParseException;
+import java.util.ArrayList;
 
 // @TODO clean up and split
 /**
@@ -27,7 +35,6 @@ public class HashTree {
     private final Certificate cert;
     private MessageDigest digest;
     private final SecureRandom srand;
-    private final Base64.Encoder b64enc;
 
     /**
      * only Constructor
@@ -44,7 +51,6 @@ public class HashTree {
         nodes.add(new ArrayList<>());
 
         this.srand = new SecureRandom();
-        this.b64enc = Base64.getEncoder();
 
         this.cert = CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(certFile));
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(Files.readAllBytes(keyFile.toPath()));
@@ -84,7 +90,9 @@ public class HashTree {
      * @throws IllegalStateException thrown if tree is already closed
      */
     public void sign() throws IllegalStateException{
+
         if (this.closed) throw new IllegalStateException("this tree is already closed");
+
         ArrayList<byte[]> l0 = nodes.get(0);
         int power2 = (int) Math.ceil(Math.log(l0.size()) / Math.log(2));
         int missing = (int) Math.pow(2,  power2) - l0.size();
@@ -96,7 +104,7 @@ public class HashTree {
 
         ArrayList<byte[]> last = nodes.get(nodes.size() - 1);
         if (!last.equals(l0))
-            throw new IllegalStateException("Something went real wrong babes");
+            throw new IllegalStateException("Something went real wrong babes"); //@TODO implement re-try for when signing failed once and left behind erroneous nodes
         else if(last.isEmpty())
             throw new IllegalStateException("no messages to sign");
         else if(last.size() > 1)
@@ -162,10 +170,11 @@ public class HashTree {
 
     /**
      * generate string of hex values that represents the byte array
+     * (for use in leaves)
      * @param bytes input
      * @return output
      */
-    public String bytesToHex(byte[] bytes) {
+    private String bytesToHex(byte[] bytes) {
         StringBuilder buf = new StringBuilder();
         for (byte b : bytes) {
             String str = Integer.toHexString(Byte.toUnsignedInt(b));
@@ -176,20 +185,18 @@ public class HashTree {
 
     /**
      * JSON data for Signature header (algorithm, and certificate with Base64 Encoding)
-     * @return bytearray of JSON String using UTF-8, encoded in Base64
+     * @return Base64URL encoded JSON Object String representation
      */
-    public byte[] header() {
+    public Base64URL jwsheader() {
         try {
             JSONObject header = new JSONObject()
                     .put("alg", "HTES256")
-                    .put("x5c", new String[]{new String(
-                            b64enc.encode(
+                    .put("x5c", new String[]{
+                            Base64.encode(
                                     this.cert.getEncoded()
-                            ),
-                            StandardCharsets.UTF_8
-                    )});
+                            ).toString()});
 
-            return b64enc.encode(header.toString().getBytes(StandardCharsets.UTF_8));
+            return Base64URL.encode(header.toString());
         } catch (CertificateException e) {
 
             System.err.println("Certificate output Error");
@@ -199,27 +206,15 @@ public class HashTree {
     }
 
     /**
-     * convert bytearray to Base-64 Encoded UTF-String representation
-     * @param bytes raw data
-     * @return String representation (UTF-8) of Base64-Encoded Data
-     */
-    public  String b64utfstr(byte[] bytes) {
-        return new String(
-                b64enc.encode(bytes),
-                StandardCharsets.UTF_8
-        );
-    }
-
-    /**
-     * JSON data of signature
+     * JSON form signature
      * (Sibling Node Hashes on path to root, individually b64-encoded, with a plaintext '-' if left sibling,
      * root signature with Base64 encoding) for the given message
      * @param msg raw data of leaf node within this Tree
-     * @return bytearray of JSON String using UTF-8, encoded in Base64 (again)
+     * @return Base64URL encoded JSON Object String representation
      * @throws IllegalStateException thrown if this Tree has yet to be closed and signed
      * @throws IllegalArgumentException thrown if the given message cannot be found in this Tree's leaves
      */
-    public byte[] signature(byte[] msg) throws IllegalStateException, IllegalArgumentException {
+    public Base64URL signature(byte[] msg) throws IllegalStateException, IllegalArgumentException {
         if(!this.closed) throw new IllegalStateException("Hashtree is not signed yet");
 
         byte[] hashedmsg = digest.digest(msg);
@@ -238,7 +233,7 @@ public class HashTree {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     stream.write("-".getBytes(StandardCharsets.UTF_8));
                     stream.write(layer.get(offset - 1));
-                    hashList.add(b64utfstr(stream.toByteArray()));
+                    hashList.add(Base64URL.encode(stream.toByteArray()).toString());
 
                 } catch (IOException e) {
 
@@ -247,139 +242,33 @@ public class HashTree {
                     return null;
                 }
             } else
-                hashList.add(b64utfstr(layer.get(offset + 1)));
+                hashList.add(Base64URL.encode(layer.get(offset + 1)).toString());
 
             offset /= 2;
         }
 
         JSONObject signature = new JSONObject()
                 .put("ht_path", hashList)
-                .put("ecdsa_sig", b64utfstr(this.ecdsa_sig));
+                .put("ecdsa_sig", Base64URL.encode(this.ecdsa_sig).toString());
 
-        return(b64enc.encode(signature.toString().getBytes(StandardCharsets.UTF_8)));
+        return(Base64URL.encode(signature.toString()));
     }
 
-    public String json_web_signature(byte[] msg) {
-
-        ByteArrayOutputStream jsonstrm = new ByteArrayOutputStream();
+    /**
+     * serialise JWS
+     * @param msg message to generate signature for
+     * @return JWS or null if failed to serialise
+     * @throws IllegalStateException if Hashtree isn't closed
+     * @throws IllegalArgumentException if msg cannot be found in leaves
+     */
+    public JWSObject json_web_signature(byte[] msg) throws IllegalStateException, IllegalArgumentException {
 
         try {
-
-            jsonstrm.write(this.header());
-            jsonstrm.write(".".getBytes(StandardCharsets.UTF_8));
-            jsonstrm.write(Base64.getEncoder().encode(msg));
-            jsonstrm.write(".".getBytes(StandardCharsets.UTF_8));
-            jsonstrm.write(this.signature(msg));
-
-        } catch (IOException e) {
-
-            System.err.println("concat error");
+            return new JWSObject(jwsheader(), new Payload(msg), signature(msg));
+        } catch (ParseException e) {
+            System.err.println("failed to serialise JWS");
             e.printStackTrace();
             return null;
-        }
-
-        return jsonstrm.toString(StandardCharsets.UTF_8);
-    }
-
-    /**
-     * verification function
-     * @param jws UTF-8 String in header.data.signature format
-     * @return true if verification successful
-     * @throws CertificateException thrown if certificate cannot be parsed
-     * @throws InvalidKeyException thrown if public key generated from certificate judged invalid
-     */
-    public static boolean verifyjws(String jws) throws CertificateException, InvalidKeyException {
-        String[] split = jws.split("\\.");
-        Base64.Decoder dec = Base64.getDecoder();
-
-
-        try {
-
-            JSONObject header = new JSONObject(new String(dec.decode(split[0]), StandardCharsets.UTF_8));
-            JSONObject signature = new JSONObject(new String(dec.decode(split[2].getBytes(StandardCharsets.UTF_8))));
-
-            byte[] sig = dec.decode(signature.getString("ecdsa_sig").getBytes(StandardCharsets.UTF_8));
-            byte[] cert = dec.decode(
-                    ((String) header.getJSONArray("x5c")
-                            .get(0)
-                    ).getBytes(StandardCharsets.UTF_8)
-            );
-
-            List<Object> pathlist = signature.getJSONArray("ht_path").toList();
-            String[] b64path = Arrays.copyOf(pathlist.toArray(new Object[0]), pathlist.size(), String[].class);
-
-            byte[][] decpath = new byte[b64path.length][];
-            for (int i = 0; i < b64path.length; i++)
-                decpath[i] = dec.decode(b64path[i].getBytes(StandardCharsets.UTF_8));
-
-            return(verifysig(
-                    cert,
-                    decpath,
-                    dec.decode(split[1].getBytes(StandardCharsets.UTF_8)),
-                    sig)
-            );
-
-        } catch (JSONException | IndexOutOfBoundsException e) {
-
-            System.err.println("Invalid Format");
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * internal function to verify signatures
-     * @param x5c certificate in raw byte data (unencoded)
-     * @param path Array of bytearrays containing raw sibling node hashes along path to root (unencoded)
-     * @param msg raw message data
-     * @param sig raw data of the root signature (unencoded)
-     * @return true if verification successful
-     * @throws CertificateException thrown if certificate cannot be parsed
-     * @throws InvalidKeyException thrown if public key generated from certificate judged invalid
-     */
-    private static boolean verifysig(byte[] x5c, byte[][] path, byte[] msg, byte[] sig) throws CertificateException, InvalidKeyException {
-
-        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(x5c));
-        cert.checkValidity();
-
-        try {
-
-            Signature versig = Signature.getInstance("SHA256withECDSA");
-            versig.initVerify(cert.getPublicKey());
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] msghash = digest.digest(msg);
-            for (byte[] hash : path) {
-                ByteArrayOutputStream concat = new ByteArrayOutputStream();
-                if (hash[0] == (byte) '-') {
-                    concat.write(Arrays.copyOfRange(hash, 1, hash.length));
-                    concat.write(msghash);
-                } else {
-                    concat.write(msghash);
-                    concat.write(hash);
-                }
-                msghash = digest.digest(concat.toByteArray());
-            }
-
-            versig.update(msghash);
-            return versig.verify(sig);
-
-        } catch (IOException e) {
-
-            System.err.println("concat error");
-            e.printStackTrace();
-            return false;
-        } catch (NoSuchAlgorithmException e) {
-
-            System.err.println("instantiation error: Algorithm");
-            e.printStackTrace();
-            return false;
-        } catch (SignatureException e) {
-
-            System.err.println("Signature initialization error");
-            e.printStackTrace();
-            return false;
         }
     }
 }
