@@ -6,7 +6,9 @@ import javafx.stage.Stage;
 
 import java.util.Objects;
 
+// @TODO define output
 /**
+ * vllt einen gesamt-signatur-file?
  * Main executable, JavaFX application
  * @author F. Krause, SMSB HOST
  */
