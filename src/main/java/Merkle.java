@@ -26,10 +26,10 @@ public class Merkle {
 
     static final double ln2 = Math.log(2);
 
-    private ArrayList<byte[]> leaves;
-    private ArrayList<String> dict;
+    private final ArrayList<byte[]> leaves;
+    private final ArrayList<String> dict;
 
-    private MessageDigest hash;
+    private final MessageDigest hash;
     private static final SecureRandom srand = new SecureRandom();
     private final Signature ecdsa;
 

@@ -2,7 +2,9 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.util.Objects;
 
@@ -13,6 +15,15 @@ import java.util.Objects;
  * @author F. Krause, SMSB HOST
  */
 public class Main extends Application {
+
+    enum WINDOW{
+        FULL,
+        MAX,
+        COMP
+    }
+
+    private static double xOffset = 0;
+    private static double yOffset = 0;
 
     /**
      * main executable, launches GUI
@@ -30,13 +41,38 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(Objects.requireNonNull(Main.class.getResource("scene.fxml")));
+        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("scene.fxml")));
+        Parent root = loader.load();
+        MainController cont = loader.getController();
 
         Scene scene = new Scene(root);
-        //scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
 
-        primaryStage.setTitle("JavaFX and Gradle");
+        primaryStage.setTitle("Merkle Hashtree Signature Application");
+        primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        cont.menu.setOnMousePressed(event -> {
+            xOffset = primaryStage.getX() - event.getScreenX();
+            yOffset = primaryStage.getY() - event.getScreenY();
+        });
+        cont.menu.setOnMouseDragged(event -> {
+            primaryStage.setX(event.getScreenX() + xOffset);
+            primaryStage.setY(event.getScreenY() + yOffset);
+        });
+
+        cont.closeBut.setOnAction(event -> primaryStage.close());
+
+        cont.full.setOnAction(event -> setWindow(primaryStage, WINDOW.FULL));
+        cont.max.setOnAction(event -> setWindow(primaryStage, WINDOW.MAX));
+        cont.comp.setOnAction(event -> setWindow(primaryStage, WINDOW.COMP));
+
+        cont.outpDirBut.setOnAction(event -> cont.setOutpDir(new DirectoryChooser().showDialog(primaryStage)));
+    }
+
+    private void setWindow(Stage stage, WINDOW w) {
+        stage.setFullScreen(w == WINDOW.FULL);
+        stage.setMaximized(w == WINDOW.MAX);
     }
 }

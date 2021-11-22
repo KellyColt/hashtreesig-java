@@ -1,55 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
 
+<VBox id="root" fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="MainController">
+    <HBox fx:id="topBar" VBox.vgrow="NEVER">
+        <effect>
+            <InnerShadow blurType="GAUSSIAN" height="50.0" offsetY="-5.0" radius="12.0" width="0.0">
+                <color>
+                    <Color red="0.2800000011920929" green="0.2091600000858307" blue="0.1876000016927719" opacity="0.5"/>
+                </color>
+            </InnerShadow>
+        </effect>
+        <MenuBar fx:id="menu" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
+            <Menu id="pref" mnemonicParsing="false" text="Preferences">
+                <MenuItem id="certs" fx:id="certs" mnemonicParsing="false" text="Certificates"/>
+            </Menu>
+            <Menu id="view" mnemonicParsing="false" text="View">
+                <MenuItem id="full" fx:id="full" mnemonicParsing="false" text="Fullscreen"/>
+                <MenuItem id="max" fx:id="max" mnemonicParsing="false" text="Maximize"/>
+                <MenuItem id="comp" fx:id="comp" mnemonicParsing="false" text="Compact"/>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Help">
+                <MenuItem fx:id="about" mnemonicParsing="false" text="About"/>
+            </Menu>
 
-<VBox id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
-   <children>
-      <MenuBar>
-        <menus>
-          <Menu id="pref" mnemonicParsing="false" text="Preferences">
-            <items>
-              <MenuItem id="certs" mnemonicParsing="false" text="Certificates" />
-            </items>
-          </Menu>
-          <Menu id="view" mnemonicParsing="false" text="View">
-            <items>
-              <MenuItem id="full" mnemonicParsing="false" text="Fullscreen" />
-                  <MenuItem id="comp" mnemonicParsing="false" text="Compact" />
-            </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Help">
-            <items>
-              <MenuItem mnemonicParsing="false" text="About" />
-            </items>
-          </Menu>
-        </menus>
-      </MenuBar>
-      <VBox id="content" prefHeight="200.0" prefWidth="100.0" spacing="5.0" VBox.vgrow="ALWAYS">
-         <children>
-            <Button id="select" contentDisplay="CENTER" mnemonicParsing="false" text="Select Files..." VBox.vgrow="NEVER" />
-            <ListView id="FileList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
-            <HBox id="outprow" alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
-               <children>
-                  <Button id="outp" contentDisplay="CENTER" mnemonicParsing="false" text="Output to..." />
-                  <TextField id="dirtext" maxWidth="1.7976931348623157E308" promptText="input directory" HBox.hgrow="ALWAYS" />
-               </children>
-            </HBox>
-            <HBox id="signrow" alignment="CENTER_LEFT" fillHeight="false" spacing="10.0" VBox.vgrow="NEVER">
-               <children>
-                  <Button id="sign" contentDisplay="CENTER" defaultButton="true" mnemonicParsing="false" text="Sign" />
-                  <ProgressBar id="progbar" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" progress="0.0" HBox.hgrow="ALWAYS" />
-               </children>
-            </HBox>
-         </children>
-         <padding>
-            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-         </padding>
-      </VBox>
-   </children>
+        </MenuBar>
+        <Button fx:id="closeBut" accessibleText="Close Application" contentDisplay="CENTER" mnemonicParsing="false"
+                text="x" textAlignment="CENTER"/>
+    </HBox>
+    <TabPane id="tabs" fx:id="tabs" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <Tab fx:id="signTab" text="Sign">
+            <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0">
+                <VBox id="content" fx:id="signBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="100.0" spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                    <Button id="select" fx:id="fileSelBut" contentDisplay="CENTER" mnemonicParsing="false" text="Select Files..." VBox.vgrow="NEVER" />
+                    <ListView id="FileList" fx:id="fileList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+                    <HBox id="outprow" alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
+                        <Button id="outp" fx:id="outpDirBut" contentDisplay="CENTER" mnemonicParsing="false" text="Output to..." />
+                        <TextField id="dirtext" fx:id="outpDirShow" editable="false" maxWidth="1.7976931348623157E308" promptText="directory..." HBox.hgrow="ALWAYS" />
+                    </HBox>
+                    <HBox id="signrow" alignment="CENTER_LEFT" fillHeight="false" spacing="10.0" VBox.vgrow="NEVER">
+                        <Button id="sign" fx:id="signBut" contentDisplay="CENTER" defaultButton="true" mnemonicParsing="false" text="Sign" />
+                        <ProgressBar id="progbar" fx:id="sigProg" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" progress="0.0" HBox.hgrow="ALWAYS" />
+                    </HBox>
+                </VBox>
+            </AnchorPane>
+        </Tab>
+        <Tab fx:id="genTab" text="Generate">
+            <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+            </AnchorPane>
+        </Tab>
+        <Tab fx:id="vertab" text="Verify">
+            <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+            </AnchorPane>
+        </Tab>
+    </TabPane>
 </VBox>
