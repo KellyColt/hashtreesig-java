@@ -2,13 +2,11 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.*;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -103,6 +101,12 @@ public class Merkle {
         this.init(keyFile, certFile);
     }
 
+    public Merkle(ECPrivateKey key, X509Certificate cert) throws NoSuchAlgorithmException {
+
+        this();
+        this.init(key, cert);
+    }
+
     /**
      * initialisation of Key and Certificate for signing
      * @param keyFile File containing key data
@@ -115,13 +119,11 @@ public class Merkle {
         try {
 
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(Files.readAllBytes(keyFile.toPath()));
-
             ECPrivateKey eckey =(ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(spec);
-            ecdsa.initSign(eckey, srand);
+
             X509Certificate eccert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(certFile));
 
-            this.cert = Base64.encode(eccert.getEncoded());
-            this.initiated = true;
+            init(eckey, eccert);
 
         } catch (IOException e) {
 
@@ -131,9 +133,9 @@ public class Merkle {
             this.cert = null;
             this.initiated = false;
 
-        } catch (InvalidKeySpecException | InvalidKeyException e) {
+        } catch (InvalidKeySpecException e) {
 
-            System.err.println("Unable to parse key");
+            System.err.println("Unable to parse key File");
             e.printStackTrace();
 
             this.cert = null;
@@ -141,7 +143,33 @@ public class Merkle {
 
         } catch (CertificateException e) {
 
-            System.err.println("Unable to parse Certificate");
+            System.err.println("Unable to parse Certificate File");
+            e.printStackTrace();
+
+            this.cert = null;
+            this.initiated = false;
+        }
+    }
+
+    public void init(ECPrivateKey key, X509Certificate eccert) {
+        try {
+
+            ecdsa.initSign(key, srand);
+            this.cert = Base64.encode(eccert.getEncoded());
+
+            this.initiated = true;
+
+        } catch (InvalidKeyException e) {
+
+            System.err.println("Unable to parse key");
+            e.printStackTrace();
+
+            this.cert = null;
+            this.initiated = false;
+
+        } catch (CertificateEncodingException e) {
+
+            System.err.println("Unable to encode Certificate");
             e.printStackTrace();
 
             this.cert = null;
@@ -364,6 +392,7 @@ public class Merkle {
         public byte[] getRoot() {
             return this.rows[this.rows.length - 1][0];
         }
+
     }
 
     /**

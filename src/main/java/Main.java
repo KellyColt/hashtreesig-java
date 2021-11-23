@@ -3,6 +3,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -69,6 +70,10 @@ public class Main extends Application {
         cont.comp.setOnAction(event -> setWindow(primaryStage, WINDOW.COMP));
 
         cont.outpDirBut.setOnAction(event -> cont.setOutpDir(new DirectoryChooser().showDialog(primaryStage)));
+        cont.fileSelBut.setOnAction(event -> cont.addFilesToSign(new FileChooser().showOpenMultipleDialog(primaryStage)));
+        cont.keySelBut.setOnAction(event -> cont.parseKey(new FileChooser().showOpenDialog(primaryStage)));
+        cont.certSelBut.setOnAction(event -> cont.parseCertificate(new FileChooser().showOpenDialog(primaryStage)));
+
     }
 
     private void setWindow(Stage stage, WINDOW w) {
