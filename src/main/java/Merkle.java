@@ -1,3 +1,8 @@
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +20,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Class that contains both the Hashtree structure and Signature data
@@ -87,6 +93,8 @@ public class Merkle {
         this.tree = null;
         this.signature = null;
         this.cert = null;
+
+
     }
 
     /**
@@ -106,6 +114,8 @@ public class Merkle {
         this();
         this.init(key, cert);
     }
+
+
 
     /**
      * initialisation of Key and Certificate for signing
@@ -327,7 +337,9 @@ public class Merkle {
 
     /**
      * Hashtree structure class
-     * contains a 4-D Array of bytes
+     * contains a 3-D Array of bytes
+     */
+    /*
      * rows[a][b][c]
      * a
      * 3                                   hash()
@@ -349,6 +361,10 @@ public class Merkle {
      */
     private static class HashTree {
         public byte[][][] rows;
+
+        private HashTree() {
+
+        }
 
         /**
          * Constructor
@@ -393,6 +409,19 @@ public class Merkle {
             return this.rows[this.rows.length - 1][0];
         }
 
+        public String toJSON() throws JsonProcessingException {
+            return (new ObjectMapper().writeValueAsString(this));
+        }
+
+        public static HashTree fromJSON(String jsonString) throws JsonProcessingException {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return (mapper.readValue(jsonString, HashTree.class));
+        }
+    }
+
+    public String getTreeJSON() throws JsonProcessingException {
+        return tree.toJSON();
     }
 
     /**
@@ -421,6 +450,110 @@ public class Merkle {
             offset /= 2;
         }
 
-        return hashes.toArray(new String[hashes.size()]);
+        return hashes.toArray(new String[0]);
+    }
+
+    /**
+     * Custom JSON Serializer class for serializing the relevant info into JSON format for writing into file
+     */
+    private static class CustomMerkSerializer extends StdSerializer<Merkle> {
+
+        public CustomMerkSerializer() {
+            this(null);
+        }
+
+        protected CustomMerkSerializer(Class<Merkle> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(Merkle value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            if (value.getSignature() == null || value.getCert() == null) throw new IOException();
+
+            gen.writeStartObject();
+            gen.writeStringField("signature", value.getSignature().toString());
+            gen.writeStringField("cert", value.getCert().toString());
+
+            gen.writeFieldName("dict");
+            gen.writeArray(value.dict.toArray(new String[0]), 0, value.dict.size());
+
+            gen.writeStringField("tree", value.getTreeJSON());
+            gen.writeEndObject();
+        }
+    }
+
+    /**
+     * serialize ur signed tree into a JSON String
+     * @return JSON String rep containing the certificate, root signature, contained messages and the hashtree
+     * @throws JsonProcessingException if I fucked up
+     */
+    public String serialize() throws JsonProcessingException, IllegalStateException {
+        if (!this.initiated || !this.closed) throw new IllegalStateException("Cannot Save an unsigned Instance");
+
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule("CustomSerializer", new Version(1,0,0,null,null,null));
+        module.addSerializer(Merkle.class, new CustomMerkSerializer());
+        mapper.registerModule(module);
+        return mapper.writeValueAsString(this);
+    }
+
+    /**
+     * Custom Deserializer class for deserializing previously saved signed trees
+     * for the sake of extracting separate signatures
+     */
+    private static class CustomMerkDeserializer extends StdDeserializer<Merkle> {
+
+        public CustomMerkDeserializer() {
+            this(null);
+        }
+
+        protected CustomMerkDeserializer(Class<?> vc) {
+            super(vc);
+        }
+
+        @Override
+        public Merkle deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+
+            try {
+                Merkle merk = new Merkle();
+                ObjectCodec codec = p.getCodec();
+                JsonNode merkNode = codec.readTree(p);
+
+                JsonNode sigNode = merkNode.get("signature");
+                merk.signature = new Base64URL(sigNode.asText());
+
+                JsonNode certNode = merkNode.get("cert");
+                merk.cert = new Base64(certNode.asText());
+
+                JsonNode dictNode = merkNode.get("dict");
+                for (JsonNode elem : dictNode) merk.dict.add(elem.asText());
+
+                JsonNode treeNode = merkNode.get("tree");
+                merk.tree = HashTree.fromJSON(treeNode.asText());
+
+                merk.initiated = true;
+                merk.closed = true;
+
+                return merk;
+
+            } catch (NoSuchAlgorithmException e) {
+
+                throw new IOException(e);
+            }
+        }
+    }
+
+    /**
+     * Build a new Instance from the data saved to a JSON String
+     * @param jsonString JSON String
+     * @return closed instance (no key data, only certificate)
+     * @throws JsonProcessingException if I fucked up
+     */
+    public static Merkle fromJSON(String jsonString) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule("CustomDeserializer", new Version(1,0,0,null,null,null));
+        module.addDeserializer(Merkle.class, new CustomMerkDeserializer());
+        mapper.registerModule(module);
+        return mapper.readValue(jsonString, Merkle.class);
     }
 }

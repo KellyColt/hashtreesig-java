@@ -1,3 +1,5 @@
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSObject;
 
@@ -8,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import com.fasterxml.jackson.databind.*;
 
 //@TODO test different size trees
 /**
@@ -15,7 +18,7 @@ import java.util.ArrayList;
  * @author F. Krause, SMSB HOST
  */
 public abstract class Test {
-    private static final int test_nr = 2049;
+    private static final int test_nr = 3;
 
     /**
      * runnable
@@ -86,6 +89,12 @@ public abstract class Test {
 
             System.out.println(jws2.verify(new HTJSWVerifier(certFile)));
 
+            System.out.println(merkle2.getTreeJSON());
+            System.out.println(new ObjectMapper().writeValueAsString(merkle2));
+            System.out.println(merkle2.serialize());
+            Merkle copy = Merkle.fromJSON(merkle2.serialize());
+            //System.out.println(copy.getSignature().toString());
+
         } catch (NoSuchAlgorithmException e) {
             System.err.println("you mistyped the algorithm dummy");
             e.printStackTrace();
@@ -105,6 +114,8 @@ public abstract class Test {
         } catch (IOException e) {
 
             System.err.println("Failed to open Certfile");
+            e.printStackTrace();
+        } catch (NullPointerException e) {
             e.printStackTrace();
         }
     }
