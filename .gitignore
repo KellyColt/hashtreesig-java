@@ -333,3 +333,4 @@ gradle-app.setting
 ###Custom
 
 doc/
+/output/

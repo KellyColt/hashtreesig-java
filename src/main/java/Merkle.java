@@ -550,10 +550,12 @@ public class Merkle {
      * @throws JsonProcessingException if I fucked up
      */
     public static Merkle fromJSON(String jsonString) throws JsonProcessingException {
+
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule module = new SimpleModule("CustomDeserializer", new Version(1,0,0,null,null,null));
         module.addDeserializer(Merkle.class, new CustomMerkDeserializer());
         mapper.registerModule(module);
+
         return mapper.readValue(jsonString, Merkle.class);
     }
 }

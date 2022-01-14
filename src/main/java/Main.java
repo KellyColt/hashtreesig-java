@@ -47,7 +47,7 @@ public class Main extends Application {
         MainController cont = loader.getController();
 
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
+        //scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
 
         primaryStage.setTitle("Merkle Hashtree Signature Application");
         primaryStage.initStyle(StageStyle.TRANSPARENT);
@@ -70,9 +70,15 @@ public class Main extends Application {
         cont.comp.setOnAction(event -> setWindow(primaryStage, WINDOW.COMP));
 
         cont.outpDirBut.setOnAction(event -> cont.setOutpDir(new DirectoryChooser().showDialog(primaryStage)));
+        cont.genoutp.setOnAction(event -> cont.setGenOutpDir(new DirectoryChooser().showDialog(primaryStage)));
+
         cont.fileSelBut.setOnAction(event -> cont.addFilesToSign(new FileChooser().showOpenMultipleDialog(primaryStage)));
+        cont.genfilesel.setOnAction(event -> cont.addFilesToGen(new FileChooser().showOpenMultipleDialog(primaryStage)));
+
         cont.keySelBut.setOnAction(event -> cont.parseKey(new FileChooser().showOpenDialog(primaryStage)));
         cont.certSelBut.setOnAction(event -> cont.parseCertificate(new FileChooser().showOpenDialog(primaryStage)));
+        cont.treesel.setOnAction(event -> cont.parseTreeJSON(new FileChooser().showOpenDialog(primaryStage)));
+        cont.verSel.setOnAction(event -> cont.parseJWS(new FileChooser().showOpenDialog(primaryStage)));
 
     }
 
