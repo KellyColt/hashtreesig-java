@@ -1,14 +1,14 @@
-import com.fasterxml.jackson.core.JsonProcessingException;
+package application;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.util.Base64URL;
-import javafx.collections.ObservableList;
+import htjsw.HTJSWVerifier;
+import htjsw.HTJWSBuilder;
+import htjsw.Merkle;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;

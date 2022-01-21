@@ -1,3 +1,5 @@
+package htjsw;
+
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.util.Base64URL;
@@ -14,7 +16,7 @@ public abstract class HTJWSBuilder {
 
     /**
      * builds JWSobject for given message
-     * @param merkTree Merkle Tree Structure that is closed and signed, containing msg
+     * @param merkTree htjsw.Merkle Tree Structure that is closed and signed, containing msg
      * @param msg message to generate JWS for
      * @return JSON Web Signature of this message
      * @throws Merkle.ConcatException if somewhere along the way the concatenation glitches
@@ -36,7 +38,7 @@ public abstract class HTJWSBuilder {
 
     /**
      * generates JWS Header with Algorithm and Certificate data
-     * @param merkTree Merkle Hashtree Structure that has been initialised with a Certificate
+     * @param merkTree htjsw.Merkle Hashtree Structure that has been initialised with a Certificate
      * @return resulting JSON Object
      * @throws IllegalStateException if the given structure has not been initialised with a Certificate
      */

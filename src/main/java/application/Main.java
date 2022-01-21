@@ -1,3 +1,5 @@
+package application;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -9,9 +11,7 @@ import javafx.stage.StageStyle;
 
 import java.util.Objects;
 
-// @TODO define output
 /**
- * vllt einen gesamt-signatur-file?
  * Main executable, JavaFX application
  * @author F. Krause, SMSB HOST
  */
@@ -31,7 +31,6 @@ public class Main extends Application {
      * @param args parameters
      */
     public static void main(String[] args) {
-        System.out.println("Hello World!");
         launch();
     }
 
@@ -42,14 +41,14 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("scene.fxml")));
+        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/scene.fxml")));
         Parent root = loader.load();
         MainController cont = loader.getController();
 
         Scene scene = new Scene(root);
         //scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
 
-        primaryStage.setTitle("Merkle Hashtree Signature Application");
+        primaryStage.setTitle("htjsw.Merkle Hashtree Signature Application");
         primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
         primaryStage.show();

@@ -1,3 +1,5 @@
+package htjsw;
+
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -7,7 +9,10 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.*;
@@ -20,7 +25,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Class that contains both the Hashtree structure and Signature data
@@ -302,7 +306,7 @@ public class Merkle {
      * @throws ConcatException if there is a glitch during concatenation
      * @throws NoSuchAlgorithmException if I misspelled SHA-256
      */
-    static byte[] concatHash(byte[] left, byte[] right) throws ConcatException, NoSuchAlgorithmException {
+    public static byte[] concatHash(byte[] left, byte[] right) throws ConcatException, NoSuchAlgorithmException {
 
         MessageDigest sha = MessageDigest.getInstance("SHA-256");
 
@@ -313,7 +317,7 @@ public class Merkle {
      * custom Exception class for concatenation processes
      * thrown if the concatenation process glitches
      */
-    static class ConcatException extends Exception{
+    public static class ConcatException extends Exception{
 
         /**
          * basic constructor
@@ -431,7 +435,7 @@ public class Merkle {
      * @throws IllegalStateException if this structure has yet to be closed
      * @throws ConcatException if the Concatenation glitches
      */
-    String[] getPath(byte[] msg) throws IllegalStateException, IllegalArgumentException, ConcatException {
+    public String[] getPath(byte[] msg) throws IllegalStateException, IllegalArgumentException, ConcatException {
         if (!this.closed) throw new IllegalStateException("Tree has yet to be built");
         if (lookup(msg) == -1) throw new IllegalArgumentException("message not contained in this tree");
 

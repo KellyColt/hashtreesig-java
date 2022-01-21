@@ -1,7 +1,11 @@
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+package test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSObject;
+import htjsw.HTJSWVerifier;
+import htjsw.HTJWSBuilder;
+import htjsw.Merkle;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +14,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import com.fasterxml.jackson.databind.*;
 
 //@TODO test different size trees
 /**
@@ -74,7 +77,7 @@ public abstract class Test {
         System.out.println(json_string.getPayload().toString());
         System.out.println(json_string.getSignature().decodeToString());
 
-        System.out.println(json_string.verify(new HTJSWVerifier())); */
+        System.out.println(json_string.verify(new htjsw.HTJSWVerifier())); */
 
         try {
             Merkle merkle2 = new Merkle(keyFile, certFile);
