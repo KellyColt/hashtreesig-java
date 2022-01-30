@@ -11,35 +11,31 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<TitledPane animated="false" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="400.0" prefWidth="600.0" text="Key Managament" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.CertsController">
-   <content>
-      <VBox prefHeight="400.0" prefWidth="600.0">
-         <children>
-            <SplitPane dividerPositions="0.5" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
-              <items>
-                  <ScrollPane fitToWidth="true" minViewportHeight="20.0" minViewportWidth="100.0" prefHeight="200.0" prefViewportWidth="200.0" prefWidth="200.0" SplitPane.resizableWithParent="false">
-                     <content>
-                        <ListView fx:id="keylist" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-                     </content></ScrollPane>
-                  <TextArea fx:id="ksText" editable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" promptText="Select Keypair..." wrapText="true" />
-              </items>
-            </SplitPane>
-            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" spacing="10.0" VBox.vgrow="NEVER">
-               <children>
-                  <Button fx:id="addBut" minWidth="70.0" mnemonicParsing="false" text="Add" />
-                <Button fx:id="delBut" disable="true" minWidth="70.0" mnemonicParsing="false" text="Delete" />
-                  <ButtonBar maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
-                    <buttons>
-                        <Button fx:id="save" defaultButton="true" mnemonicParsing="false" text="Save" />
-                      <Button fx:id="cancel" cancelButton="true" mnemonicParsing="false" text="Cancel" />
-                    </buttons>
-                  </ButtonBar>
-               </children>
-               <padding>
-                  <Insets bottom="10.0" top="10.0" />
-               </padding>
-            </HBox>
-         </children>
-      </VBox>
-   </content>
+<TitledPane animated="false" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            prefHeight="400.0" prefWidth="600.0" text="Key Managament" xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.CertsController">
+    <VBox prefHeight="400.0" prefWidth="600.0">
+        <SplitPane dividerPositions="0.5" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+            <ScrollPane fitToWidth="true" minViewportHeight="20.0" minViewportWidth="100.0" prefHeight="200.0"
+                        prefViewportWidth="200.0" prefWidth="200.0" SplitPane.resizableWithParent="false">
+                <ListView fx:id="keylist" maxHeight="1.7976931348623157E308"
+                          maxWidth="1.7976931348623157E308"/>
+            </ScrollPane>
+            <TextArea fx:id="ksText" editable="false" maxHeight="1.7976931348623157E308"
+                      maxWidth="1.7976931348623157E308" promptText="Select Keypair..." wrapText="true"/>
+        </SplitPane>
+        <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" spacing="10.0" VBox.vgrow="NEVER">
+            <padding>
+                <Insets bottom="10.0" top="10.0"/>
+            </padding>
+            <Button fx:id="addBut" minWidth="70.0" mnemonicParsing="false" text="Add"/>
+            <Button fx:id="delBut" disable="true" minWidth="70.0" mnemonicParsing="false" text="Delete"/>
+            <ButtonBar maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
+                <buttons>
+                    <Button fx:id="save" defaultButton="true" mnemonicParsing="false" text="Save"/>
+                    <Button fx:id="cancel" cancelButton="true" mnemonicParsing="false" text="Cancel"/>
+                </buttons>
+            </ButtonBar>
+        </HBox>
+    </VBox>
 </TitledPane>

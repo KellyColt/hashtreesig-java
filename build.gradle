@@ -13,8 +13,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.json:json:20210307'
-    implementation 'com.nimbusds:nimbus-jose-jwt:9.15.2'
+    implementation 'org.json:json:20211205'
+    implementation 'com.nimbusds:nimbus-jose-jwt:9.16'
     implementation 'org.jetbrains:annotations:22.0.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
 }

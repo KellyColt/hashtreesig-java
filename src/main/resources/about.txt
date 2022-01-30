@@ -1,0 +1,2 @@
+This program was developed by F. Krause as a semester project as an IT-Security student at the Hochschule Stralsund (HOST). They were supervised by Prof. Dr.-Ing. Andreas Noack and in cooperation with the gematik GmbH (contact A. Hallof).
+It is distributed under an GNU General Public License. The license text can be found in the program files, named "license.txt"

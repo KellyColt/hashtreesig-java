@@ -1,7 +1,5 @@
 package application;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -9,8 +7,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.Pair;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -52,7 +48,7 @@ public class CertsController {
         do {
             retry = false;
             try {
-                ks.load(new FileInputStream("keystore.jsk"), enterPW());
+                ks.load(new FileInputStream("keystore.jsk"), Main.enterPW());
 
             } catch (FileNotFoundException e) {
 
@@ -76,28 +72,25 @@ public class CertsController {
 
         keylist.getItems().addAll(Collections.list(ks.aliases()));
 
-        keylist.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                try {
+        keylist.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            try {
 
-                    if(ks.containsAlias(newValue)) {
+                if(ks.containsAlias(newValue)) {
 
-                        ksText.setText(ks.getCertificateChain(newValue)[0].toString());
-                        delBut.setDisable(false);
+                    ksText.setText(ks.getCertificateChain(newValue)[0].toString());
+                    delBut.setDisable(false);
 
-                    } else {
+                } else {
 
-                        ksText.clear();
-                        delBut.setDisable(true);
-                    }
-
-                } catch (KeyStoreException e) {
-
-                    new Alert(Alert.AlertType.ERROR, "Failed to load Data").showAndWait();
-                    e.printStackTrace();
                     ksText.clear();
+                    delBut.setDisable(true);
                 }
+
+            } catch (KeyStoreException e) {
+
+                new Alert(Alert.AlertType.ERROR, "Failed to load Data").showAndWait();
+                e.printStackTrace();
+                ksText.clear();
             }
         });
 
@@ -110,7 +103,7 @@ public class CertsController {
         try(FileOutputStream stream = new FileOutputStream("keystore.jsk")) {
 
 
-            ks.store(stream, enterPW());
+            ks.store(stream, Main.enterPW());
 
         } catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
 
@@ -135,7 +128,6 @@ public class CertsController {
         } catch (IndexOutOfBoundsException | NullPointerException e) {
 
             System.err.println("delete exception that doesn't impact functionality >.>");
-            return;
         }
     }
 
@@ -226,32 +218,6 @@ public class CertsController {
 
     }
 
-    private char[] enterPW() {
-        Dialog<String> d = new Dialog<>();
-        d.setTitle("Password Dialog");
-        d.setHeaderText("Password Check");
-
-        PasswordField pass = new PasswordField();
-        Label cont = new Label("Please Enter your Password:");
-        VBox box = new VBox(10);
-        box.setAlignment(Pos.CENTER);
-        box.getChildren().addAll(cont, pass);
-        d.getDialogPane().setContent(box);
-
-        d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        d.setResultConverter(Button -> {
-            if (Button == ButtonType.OK) {
-                return pass.getText();
-            }
-            return "";
-        });
-
-        Optional<String> result = d.showAndWait();
-        if(result.isPresent()) return(result.get().toCharArray());
-
-        else return "".toCharArray();
-    }
-
     private char[] enternewPW() {
         Dialog<String> d = new Dialog<>();
         d.setTitle("New Password Dialog");
@@ -274,7 +240,7 @@ public class CertsController {
                     Matcher m1 = special.matcher(password);
                     Matcher m2 = uppercase.matcher(password);
                     Matcher m3 = lowercase.matcher(password);
-                    Matcher m4 = lowercase.matcher(password);
+                    Matcher m4 = num.matcher(password);
                     if (
                             password.length() < 10
                                     || !m1.find()

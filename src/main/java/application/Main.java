@@ -2,9 +2,14 @@ package application;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -12,6 +17,7 @@ import javafx.stage.StageStyle;
 
 import java.io.File;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Main executable, JavaFX application
@@ -27,7 +33,6 @@ public class Main extends Application {
 
     private static double xOffset = 0;
     private static double yOffset = 0;
-    private Stage primaryStage;
 
     /**
      * main executable, launches GUI
@@ -44,7 +49,7 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
-        this.primaryStage = primaryStage;
+
         FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/scene.fxml")));
         Parent root = loader.load();
         MainController cont = loader.getController();
@@ -78,8 +83,6 @@ public class Main extends Application {
         cont.fileSelBut.setOnAction(event -> cont.addFilesToSign(new FileChooser().showOpenMultipleDialog(primaryStage)));
         cont.genfilesel.setOnAction(event -> cont.addFilesToGen(new FileChooser().showOpenMultipleDialog(primaryStage)));
 
-        cont.keySelBut.setOnAction(event -> cont.parseKey(new FileChooser().showOpenDialog(primaryStage)));
-        cont.certSelBut.setOnAction(event -> cont.parseCertificate(new FileChooser().showOpenDialog(primaryStage)));
         cont.treesel.setOnAction(event -> cont.parseTreeJSON(new FileChooser().showOpenDialog(primaryStage)));
         cont.verSel.setOnAction(event -> cont.parseJWS(new FileChooser().showOpenDialog(primaryStage)));
 
@@ -107,7 +110,33 @@ public class Main extends Application {
             cont.cancel.setOnAction(event -> certStage.close());
         } catch (Exception e) {
             e.printStackTrace();
-            return;
         }
+    }
+
+    public static char[] enterPW() {
+
+        Dialog<String> d = new Dialog<>();
+        d.setTitle("Password Dialog");
+        d.setHeaderText("Password Check");
+
+        PasswordField pass = new PasswordField();
+        Label cont = new Label("Please Enter your Password:");
+        VBox box = new VBox(10);
+        box.setAlignment(Pos.CENTER);
+        box.getChildren().addAll(cont, pass);
+        d.getDialogPane().setContent(box);
+
+        d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        d.setResultConverter(Button -> {
+            if (Button == ButtonType.OK) {
+                return pass.getText();
+            }
+            return "";
+        });
+
+        Optional<String> result = d.showAndWait();
+        if(result.isPresent()) return(result.get().toCharArray());
+
+        else return "".toCharArray();
     }
 }

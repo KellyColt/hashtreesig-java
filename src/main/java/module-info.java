@@ -10,4 +10,5 @@ module hashtreesig.main {
     exports application;
 
     opens application;
+    opens htjsw;
 }

@@ -8,23 +8,24 @@ import htjsw.Merkle;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.KeyFactory;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
 
 /**
  * Controller zwischen Programm und GUI
@@ -32,16 +33,11 @@ import java.util.Collection;
  */
 public class MainController {
 
-    private enum WINDOW{
-        FULL,
-        MAX,
-        COMP
-    }
-
-    @FXML private VBox root;
     public MenuBar menu;
-    public MenuItem full, comp, max, certs;
-    public Button outpDirBut, closeBut, fileSelBut, keySelBut, certSelBut, verify, gen, genfilesel, treesel, genoutp, verSel;
+    public MenuItem full, comp, max, certs, about, delete;
+    public Button outpDirBut, closeBut, fileSelBut, verify, gen, genfilesel, treesel, genoutp, verSel;
+
+    @FXML private ChoiceBox<String> keyChoice;
 
     private File outpDir,  genOutpDir;
     @FXML private TextField outpDirShow, gendirtext;
@@ -50,64 +46,143 @@ public class MainController {
 
     @FXML private ListView<File> fileList, GenList;
 
-    @FXML private CheckBox keyCheck, certCheck, treeCheck, sigcheck;
-    private @Nullable X509Certificate cert;
-    private @Nullable ECPrivateKey key;
+    @FXML private CheckBox treeCheck, sigcheck;
 
     @FXML private Button signBut;
     @FXML private ProgressBar sigProg, genbar;
 
     private Merkle genTree;
     private JWSObject jws;
+    private KeyStore ks;
 
     public void initialize() {
+
+        delete.setOnAction(event -> {
+            Optional<ButtonType> conf = new Alert(
+                    Alert.AlertType.CONFIRMATION,
+                    "Do you wish completely delete your current Key Archive? You will not be able to restore it."
+            ).showAndWait();
+            if (conf.isPresent() && conf.get() == ButtonType.OK) {
+
+                try {
+                    Files.delete(new File("keystore.jsk").toPath());
+
+                } catch (IOException e) {
+
+                    new Alert(Alert.AlertType.ERROR, "Could not properly delete KeyStore, please try manually deleting the file in the program folder").showAndWait();
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        String abttxt = "";
+        try {
+            abttxt = Files.readString(Paths.get(getClass().getResource("/about.txt").toURI()));
+
+        } catch (IOException | URISyntaxException e) {
+
+            System.err.println("about text gone");
+        }
+
+        String finalAbttxt = abttxt;
+        about.setOnAction(event -> new Alert(Alert.AlertType.INFORMATION, finalAbttxt).showAndWait());
+
+        boolean retry;
+        do{
+            retry = false;
+            try{
+                ks = KeyStore.getInstance("PKCS12");
+                ks.load(new FileInputStream("keystore.jsk"), Main.enterPW());
+
+                keyChoice.getItems().addAll(Collections.list(ks.aliases()));
+                if (keyChoice.getItems().size() > 0) keyChoice.setDisable(false);
+
+            } catch (KeyStoreException e) {
+
+                System.err.println("U messed up ur Keystore Instantiation");
+                e.printStackTrace();
+
+            } catch (FileNotFoundException ignored) {
+
+            } catch ( NoSuchAlgorithmException | CertificateException e){
+
+                new Alert(Alert.AlertType.ERROR, "Failed to load Keystore").showAndWait();
+                e.printStackTrace();
+
+            } catch (IOException e) {
+
+                Optional<ButtonType> conf = new Alert(Alert.AlertType.CONFIRMATION, "Entered Invalid Password, retry?").showAndWait();
+                if (conf.isPresent() && conf.get() == ButtonType.OK) {
+                    retry = true;
+                }
+            }
+        } while(retry);
 
         signBut.setOnAction(this::sign);
         gen.setOnAction(this::generate);
         verify.setOnAction(this::verify);
-
     }
 
     private void sign(ActionEvent actionEvent) {
         sigProg.setProgress(-1);
 
-        if (!keyCheck.isSelected() || !certCheck.isSelected()) { //@TODO verify if key and cert are a matched pair @TODO implement keystore
+        if (keyChoice.getSelectionModel().getSelectedItem().isEmpty()) {
             new Alert(Alert.AlertType.ERROR, "No valid key pair has been selected!").showAndWait();
             sigProg.setProgress(0);
             return;
         }
 
         try {
+            boolean retry;
 
-            Merkle merkle = new Merkle(key, cert);
+            do {
+                retry = false;
 
-            sigProg.setProgress(0);
-            for (File file : fileList.getItems()) {
+                try {
+                    Merkle merkle = new Merkle((ECPrivateKey) ks.getKey(keyChoice.getValue(), Main.enterPW()), (X509Certificate) ks.getCertificateChain(keyChoice.getValue())[0]);
 
-                merkle.add(Files.readAllBytes(file.toPath()));
-                sigProg.setProgress((1.0 / fileList.getItems().size()) * 0.5);
-            }
+                    sigProg.setProgress(0);
+                    for (File file : fileList.getItems()) {
 
-            merkle.closeAndSign();
-            sigProg.setProgress(0.75);
+                        merkle.add(Files.readAllBytes(file.toPath()));
+                        sigProg.setProgress((1.0 / fileList.getItems().size()) * 0.5);
+                    }
 
-            new FileOutputStream(new File(outpDir, "tree-%d.json".formatted(System.currentTimeMillis())))
-                    .write(merkle.serialize().getBytes(StandardCharsets.UTF_8));
+                    merkle.closeAndSign();
+                    sigProg.setProgress(0.75);
+
+                    new FileOutputStream(new File(outpDir, "tree-%d.json".formatted(System.currentTimeMillis())))
+                            .write(merkle.serialize().getBytes(StandardCharsets.UTF_8));
+
+                } catch (UnrecoverableKeyException e) {
+
+                    Optional<ButtonType> conf = new Alert(Alert.AlertType.CONFIRMATION, "Entered Invalid Password, retry?").showAndWait();
+                    if (conf.isPresent() && conf.get() == ButtonType.OK) {
+                        retry = true;
+                    }
+                }
+
+            } while(retry);
 
             sigProg.setProgress(1);
+            new Alert(Alert.AlertType.INFORMATION, "Successfully generated signed Hashtree!");
 
         } catch (NoSuchAlgorithmException e) {
 
             e.printStackTrace();
             sigProg.setDisable(true);
-            return;
 
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to read file");
-            alert.showAndWait();
+
+            new Alert(Alert.AlertType.ERROR, "Failed to read or write file").showAndWait();
             e.printStackTrace();
             sigProg.setProgress(0);
-            return;
+
+        } catch (KeyStoreException e) {
+
+            new Alert(Alert.AlertType.ERROR, "Could not use the selected Keypair").showAndWait();
+            e.printStackTrace();
+            sigProg.setProgress(0);
         }
     }
 
@@ -160,20 +235,12 @@ public class MainController {
         }
 
         genbar.setProgress(1.0);
+        new Alert(Alert.AlertType.INFORMATION, "Signature Generation successful!");
     }
 
     private void verify(ActionEvent actionEvent) {
 
         try {
-
-            Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(
-                    new ByteArrayInputStream(
-                            jws.getHeader()
-                                    .getX509CertChain()
-                                    .get(0)
-                                    .decode()
-                    )
-            );
 
             if (jws.verify(new HTJSWVerifier())) verifyout.setText("Verification Successful!");
             else verifyout.setText("Verification Failed! Signature invalid!");
@@ -183,10 +250,6 @@ public class MainController {
             new Alert(Alert.AlertType.ERROR, "failed to perform verification").showAndWait();
             verifyout.setText("Failed to perform Verification");
 
-        } catch (CertificateException e) {
-
-            e.printStackTrace();
-            System.err.println("Babe ur Algorithms are soo last saturday");
         }
     }
 
@@ -242,38 +305,6 @@ public class MainController {
     public void addFilesToGen(Collection<File> files) {
 
         GenList.getItems().addAll(files);
-    }
-
-    public void parseCertificate(File certFile) {
-        try {
-
-            this.cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(certFile));
-            cert.checkValidity();
-            certCheck.setSelected(true);
-
-        } catch (CertificateException | IOException e) {
-
-            new Alert(Alert.AlertType.ERROR, "Failed to parse Certificate").showAndWait();
-            e.printStackTrace();
-            certCheck.setSelected(false);
-            this.cert = null;
-        }
-    }
-
-    public void parseKey(File keyFile) {
-        try {
-
-            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(Files.readAllBytes(keyFile.toPath()));
-            this.key = (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(spec);
-            keyCheck.setSelected(true);
-
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
-
-            new Alert(Alert.AlertType.ERROR, "failed to parse Key").showAndWait();
-            e.printStackTrace();
-            keyCheck.setSelected(false);
-            this.key = null;
-        }
     }
 
     public void parseTreeJSON(File treeFile) {
