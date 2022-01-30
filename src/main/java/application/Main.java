@@ -4,11 +4,13 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.io.File;
 import java.util.Objects;
 
 /**
@@ -25,6 +27,7 @@ public class Main extends Application {
 
     private static double xOffset = 0;
     private static double yOffset = 0;
+    private Stage primaryStage;
 
     /**
      * main executable, launches GUI
@@ -41,6 +44,7 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
+        this.primaryStage = primaryStage;
         FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/scene.fxml")));
         Parent root = loader.load();
         MainController cont = loader.getController();
@@ -48,7 +52,7 @@ public class Main extends Application {
         Scene scene = new Scene(root);
         //scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("main.css")).toExternalForm());
 
-        primaryStage.setTitle("htjsw.Merkle Hashtree Signature Application");
+        primaryStage.setTitle("Merkle Hashtree Signature Application");
         primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -79,10 +83,31 @@ public class Main extends Application {
         cont.treesel.setOnAction(event -> cont.parseTreeJSON(new FileChooser().showOpenDialog(primaryStage)));
         cont.verSel.setOnAction(event -> cont.parseJWS(new FileChooser().showOpenDialog(primaryStage)));
 
+        cont.certs.setOnAction(event -> openCertsWindow());
     }
 
     private void setWindow(Stage stage, WINDOW w) {
         stage.setFullScreen(w == WINDOW.FULL);
         stage.setMaximized(w == WINDOW.MAX);
+    }
+
+    private void openCertsWindow() {
+        try {
+            FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/certs.fxml")));
+            Parent root = loader.load();
+            CertsController cont = loader.getController();
+
+            Scene scene = new Scene(root);
+            Stage certStage = new Stage();
+            certStage.setTitle("Merkle Keystore Management");
+            certStage.initStyle(StageStyle.UTILITY);
+            certStage.setScene(scene);
+            certStage.show();
+
+            cont.cancel.setOnAction(event -> certStage.close());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 }

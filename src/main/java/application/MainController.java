@@ -40,7 +40,7 @@ public class MainController {
 
     @FXML private VBox root;
     public MenuBar menu;
-    public MenuItem full, comp, max;
+    public MenuItem full, comp, max, certs;
     public Button outpDirBut, closeBut, fileSelBut, keySelBut, certSelBut, verify, gen, genfilesel, treesel, genoutp, verSel;
 
     private File outpDir,  genOutpDir;

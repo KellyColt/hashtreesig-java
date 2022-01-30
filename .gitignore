@@ -334,3 +334,4 @@ gradle-app.setting
 
 doc/
 /output/
+/keystore.jsk
