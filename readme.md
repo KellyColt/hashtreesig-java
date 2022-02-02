@@ -16,7 +16,7 @@ It is distributed under an GNU General Public License. The license text can be f
 ## Documentation
 
 Most of the documentation was done using javadoc annotation. 
-The resulting Doc can be found [here]().
+The resulting Doc can be found [here](https://kellycolt.github.io/hashtreesig-java/hashtreesig.main/module-summary.html).
 
 ## Aspect Notes
 
