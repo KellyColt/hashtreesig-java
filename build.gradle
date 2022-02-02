@@ -1,7 +1,8 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.10'
+    id 'idea'
+    id 'org.openjfx.javafxplugin' version '0.0.11'
     id 'org.beryx.jlink' version '2.24.4'
 }
 
@@ -10,6 +11,12 @@ version '1.0'
 
 repositories {
     mavenCentral()
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+    }
 }
 
 dependencies {
@@ -34,4 +41,8 @@ jlink {
     launcher {
         name = 'hashtreesig'
     }
+}
+
+javadoc {
+    options.memberLevel = JavadocMemberLevel.PRIVATE
 }

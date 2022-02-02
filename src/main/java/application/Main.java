@@ -5,34 +5,64 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
-
+/*
+*    hashtreesig, a GUI for signing multiple Files using a Merkle Hash Tree and EC-SHA256
+*    Copyright (C) 2022  F. Krause
+*
+*    This program is free software: you can redistribute it and/or modify
+*    it under the terms of the GNU General Public License as published by
+*    the Free Software Foundation, either version 3 of the License, or
+*    (at your option) any later version.
+*
+*    This program is distributed in the hope that it will be useful,
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*    GNU General Public License for more details.
+*
+*    You should have received a copy of the GNU General Public License
+*    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 /**
- * Main executable, JavaFX application
- * @author F. Krause, SMSB HOST
+ * Main executable and universal function library, JavaFX application
+ * @author F. Krause
  */
 public class Main extends Application {
 
+    /**
+     * enum for window size
+     */
     enum WINDOW{
+
+        /**
+         * fullscreen
+         */
         FULL,
+
+        /**
+         * maximised
+         */
         MAX,
+
+        /**
+         * windowed small
+         */
         COMP
     }
 
-    private static double xOffset = 0;
-    private static double yOffset = 0;
+    /**
+     * numeric mouse position variable for dynamic window resizing
+     */
+    private static double xOffset = 0, yOffset = 0;
 
     /**
      * main executable, launches GUI
@@ -85,34 +115,24 @@ public class Main extends Application {
 
         cont.treesel.setOnAction(event -> cont.parseTreeJSON(new FileChooser().showOpenDialog(primaryStage)));
         cont.verSel.setOnAction(event -> cont.parseJWS(new FileChooser().showOpenDialog(primaryStage)));
-
-        cont.certs.setOnAction(event -> openCertsWindow());
     }
 
+    /**
+     * for setting universal window sizes using menu
+     * @param stage the window
+     * @param w window enum value
+     */
     private void setWindow(Stage stage, WINDOW w) {
+
         stage.setFullScreen(w == WINDOW.FULL);
         stage.setMaximized(w == WINDOW.MAX);
     }
 
-    private void openCertsWindow() {
-        try {
-            FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/certs.fxml")));
-            Parent root = loader.load();
-            CertsController cont = loader.getController();
 
-            Scene scene = new Scene(root);
-            Stage certStage = new Stage();
-            certStage.setTitle("Merkle Keystore Management");
-            certStage.initStyle(StageStyle.UTILITY);
-            certStage.setScene(scene);
-            certStage.show();
-
-            cont.cancel.setOnAction(event -> certStage.close());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
+    /**
+     * universal function for opening a Password check dialogue
+     * @return entered Password as a char array
+     */
     public static char[] enterPW() {
 
         Dialog<String> d = new Dialog<>();

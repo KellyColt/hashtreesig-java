@@ -16,11 +16,31 @@ import java.text.ParseException;
 import java.util.ArrayList;
 
 //@TODO test different size trees
+/*
+ *    hashtreesig, a GUI for signing multiple Files using a Merkle Hash Tree and EC-SHA256
+ *    Copyright (C) 2022  F. Krause
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 /**
  * a debugging executable class
  * @author F. Krause, SMSB HOST
  */
 public abstract class Test {
+    /**
+     * number of test leaves to generate
+     */
     private static final int test_nr = 3;
 
     /**

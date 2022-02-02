@@ -27,50 +27,119 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/*
+ *    hashtreesig, a GUI for signing multiple Files using a Merkle Hash Tree and EC-SHA256
+ *    Copyright (C) 2022  F. Krause
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+/**
+ * Controller for keystore utility
+ * @author F. Krause
+ */
 public class CertsController {
 
+    /**
+     * Keystore instance that holds ephemereal change data during use
+     */
     private KeyStore ks;
+    /**
+     * UI Listview of Keypair Aliases
+     */
     @FXML private ListView<String> keylist;
+    /**
+     * TextArea that displays Certificate of selected Keypair
+     */
     @FXML private TextArea ksText;
 
-    private static final Pattern special = Pattern.compile("[^a-z0-9 ]", Pattern.CASE_INSENSITIVE);
-    private static final Pattern uppercase = Pattern.compile("[A-Z]");
-    private static final Pattern lowercase = Pattern.compile("[a-z]");
-    private static final Pattern num = Pattern.compile("[0-9]");
+    /**
+     * Pattern for Password-Requirements
+     */
+    private static final Pattern
+            special = Pattern.compile("[^a-z0-9 ]", Pattern.CASE_INSENSITIVE),
+            uppercase = Pattern.compile("[A-Z]"),
+            lowercase = Pattern.compile("[a-z]"),
+            num = Pattern.compile("[0-9]");
 
+    /**
+     * UI Button
+     */
     public Button cancel, save;
+    /**
+     * UI Button
+     */
     @FXML private Button addBut, delBut;
 
-    public void initialize() throws KeyStoreException, NoSuchAlgorithmException, CertificateException {
+    /**
+     * called by fxml loader upon initialization
+     * attempts to load keystore file, creates new one if none is found
+     */
+    public void initialize() {
+        try {
+            ks = KeyStore.getInstance("PKCS12");
 
-        ks = KeyStore.getInstance("PKCS12");
-        boolean retry;
-        do {
-            retry = false;
-            try {
-                ks.load(new FileInputStream("keystore.jsk"), Main.enterPW());
-
-            } catch (FileNotFoundException e) {
+            boolean retry;
+            do {
+                retry = false;
 
                 try {
-                    ks.load(null, Objects.requireNonNull(enternewPW()));
+                    ks.load(new FileInputStream("keystore.jsk"), Main.enterPW());
 
-                } catch (NullPointerException | IOException n) {
+                } catch (FileNotFoundException e) {
 
-                    new Alert(Alert.AlertType.ERROR, "Couldn't create Keystore").showAndWait();
+                    try {
+                        ks.load(null, Objects.requireNonNull(enternewPW()));
+
+                    } catch (NullPointerException | IOException | NoSuchAlgorithmException | CertificateException n) {
+
+                        new Alert(Alert.AlertType.ERROR, "Couldn't create Keystore").showAndWait();
+                        return;
+
+                    }
+
+                } catch (IOException e) {
+
+                    Optional<ButtonType> conf = new Alert(Alert.AlertType.CONFIRMATION, "Entered Invalid Password, retry?").showAndWait();
+                    if (conf.isPresent() && conf.get() == ButtonType.OK) {
+                        retry = true;
+                    }
+
+                } catch (NoSuchAlgorithmException e) {
+
+                    System.err.println("Keystore validation Algorithm is missing");
+                    e.printStackTrace();
+                    new Alert(Alert.AlertType.ERROR, "There has been a program error, please try reinstalling").showAndWait();
+                    return;
+
+                } catch (CertificateException e) {
+
+                    new Alert(Alert.AlertType.ERROR, "Couldn't load Keystore, file might be corrupted"). showAndWait();
                     return;
                 }
 
-            } catch (IOException e) {
+            } while (retry);
 
-                Optional<ButtonType> conf = new Alert(Alert.AlertType.CONFIRMATION, "Entered Invalid Password, retry?").showAndWait();
-                if (conf.isPresent() && conf.get() == ButtonType.OK) {
-                    retry = true;
-                }
-            }
-        } while (retry);
+            keylist.getItems().addAll(Collections.list(ks.aliases()));
 
-        keylist.getItems().addAll(Collections.list(ks.aliases()));
+        } catch (KeyStoreException e) {
+
+            System.err.println("Keystore type not supported");
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "There has been a program error, please try reinstalling").showAndWait();
+            return;
+
+        }
 
         keylist.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             try {
@@ -88,7 +157,7 @@ public class CertsController {
 
             } catch (KeyStoreException e) {
 
-                new Alert(Alert.AlertType.ERROR, "Failed to load Data").showAndWait();
+                new Alert(Alert.AlertType.ERROR, "Failed to load Certificate Data").showAndWait();
                 e.printStackTrace();
                 ksText.clear();
             }
@@ -99,6 +168,9 @@ public class CertsController {
         save.setOnAction(event -> savekeystore());
     }
 
+    /**
+     * called upon Button press, saves keystore changes to file "keystore.jsk"
+     */
     private void savekeystore() {
         try(FileOutputStream stream = new FileOutputStream("keystore.jsk")) {
 
@@ -112,6 +184,10 @@ public class CertsController {
         }
     }
 
+    /**
+     * removes keypairs from keystore
+     * @param items aliases of instances to delete
+     */
     private void deletekeypairs(List<String> items) {
         try {
             for (String item : items) {
@@ -131,6 +207,9 @@ public class CertsController {
         }
     }
 
+    /**
+     * toggled by button press, shows dialogue for selecting certificate + key files (.der-Format) and entering alias
+     */
     private void addkeypair() {
 
         Dialog<Pair<String, File[]>> d = new Dialog<>();
@@ -215,10 +294,14 @@ public class CertsController {
                 e.printStackTrace();
             }
         }
-
     }
 
+    /**
+     * toggled upon instantiation if no keystore file is found. opens dialogue for entering password
+     * @return the new password as a char array
+     */
     private char[] enternewPW() {
+
         Dialog<String> d = new Dialog<>();
         d.setTitle("New Password Dialog");
         d.setHeaderText("Password Choice");

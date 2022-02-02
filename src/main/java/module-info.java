@@ -1,3 +1,6 @@
+/**
+ * module containing program source code
+ */
 module hashtreesig.main {
     requires javafx.controls;
     requires javafx.fxml;

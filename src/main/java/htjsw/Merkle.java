@@ -26,23 +26,67 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
 
+/*
+ *    hashtreesig, a GUI for signing multiple Files using a Merkle Hash Tree and EC-SHA256
+ *    Copyright (C) 2022  F. Krause
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 /**
  * Class that contains both the Hashtree structure and Signature data
- * @author F. Krause, 17575 SMSB HOST
+ * @author F. Krause
  */
 public class Merkle {
 
+    /**
+     * constant for ln(2)
+     */
     static final double ln2 = Math.log(2);
 
+    /**
+     * List of the Tree's leaf nodes (byte-Strings)
+     */
     private final ArrayList<byte[]> leaves;
+
+    /**
+     * List of the signed hashes used for looking up position
+     */
     private final ArrayList<String> dict;
 
+    /**
+     * SHA256 hash generator
+     */
     private final MessageDigest hash;
+
+    /**
+     * random number generator
+     */
     private static final SecureRandom srand = new SecureRandom();
+
+    /**
+     * ECDSA signature generator
+     */
     private final Signature ecdsa;
 
+    /**
+     * Tree instance
+     */
     private HashTree tree;
 
+    /**
+     * root signature instance
+     */
     private @Nullable Base64URL signature;
 
     /**
@@ -54,6 +98,9 @@ public class Merkle {
         return this.signature;
     }
 
+    /**
+     * X.509 certificate as Base64-encoded Bytes
+     */
     public @Nullable Base64 cert;
 
     /**
@@ -65,6 +112,9 @@ public class Merkle {
         return this.cert;
     }
 
+    /**
+     * status bool
+     */
     private boolean closed, initiated;
 
     /**
@@ -79,8 +129,8 @@ public class Merkle {
     }
 
     /**
-     * Constructor
-     * initiates Lists, instantiates Factories and sets base values for closed, initiated (false)
+     * Constructor.
+     * initiates Lists, instantiates Factories and sets base values for closed, initiated (both false)
      * @throws NoSuchAlgorithmException if I misspelled one of the Algorithms
      */
     public Merkle() throws NoSuchAlgorithmException {
@@ -97,12 +147,10 @@ public class Merkle {
         this.tree = null;
         this.signature = null;
         this.cert = null;
-
-
     }
 
     /**
-     * Constructor with immediate initialisation
+     * Constructor with immediate initialisation from key and certificate files
      * @param keyFile File containing key data
      * @param certFile File containing Certificate data
      * @throws NoSuchAlgorithmException if I misspelled my algs
@@ -113,16 +161,20 @@ public class Merkle {
         this.init(keyFile, certFile);
     }
 
+    /**
+     * Constructor with immediate initialisation using pre-parsed Certificate and Key Objects
+     * @param key key object
+     * @param cert certificate object
+     * @throws NoSuchAlgorithmException if I misspelled one of the Algorithms
+     */
     public Merkle(ECPrivateKey key, X509Certificate cert) throws NoSuchAlgorithmException {
 
         this();
         this.init(key, cert);
     }
 
-
-
     /**
-     * initialisation of Key and Certificate for signing
+     * initialisation of Key and Certificate for signing from files
      * @param keyFile File containing key data
      * @param certFile File containing Certificate data
      * @throws NoSuchAlgorithmException if I have a typo in my algorithms
@@ -165,6 +217,11 @@ public class Merkle {
         }
     }
 
+    /**
+     * initialisation of Key and Certificate for signing from pre-parsed objects
+     * @param key key object
+     * @param eccert certificate object
+     */
     public void init(ECPrivateKey key, X509Certificate eccert) {
         try {
 
@@ -317,7 +374,7 @@ public class Merkle {
      * custom Exception class for concatenation processes
      * thrown if the concatenation process glitches
      */
-    public static class ConcatException extends Exception{
+    public static class ConcatException extends Exception {
 
         /**
          * basic constructor
@@ -339,10 +396,6 @@ public class Merkle {
         }
     }
 
-    /**
-     * Hashtree structure class
-     * contains a 3-D Array of bytes
-     */
     /*
      * rows[a][b][c]
      * a
@@ -363,8 +416,21 @@ public class Merkle {
      * 0 b'F1A..' b'02f..' b'..'  b'..'   b'..'   b'..'   b'..'   b'..'
      * b    0       1       2       3       4       5       6       7
      */
+    /**
+     * Hashtree structure class
+     * contains a 3-D Array of bytes
+     */
     private static class HashTree {
-        public final byte[][][] rows;
+
+        /**
+         * 4-dimensional byte array that spans the tree nodes
+         */
+        public byte[][][] rows;
+
+        /**
+         * Empty Constructor needed for Deserialization
+         */
+        private HashTree() { /*Don't delete!!!*/}
 
         /**
          * Constructor
@@ -405,14 +471,29 @@ public class Merkle {
             }
         }
 
+        /**
+         * Getter for root node
+         * @return hash at root node
+         */
         public byte[] getRoot() {
             return this.rows[this.rows.length - 1][0];
         }
 
+        /**
+         * Serialization into JSON string
+         * @return JSON String containing 4D Array
+         * @throws JsonProcessingException if the serialization fails
+         */
         public String toJSON() throws JsonProcessingException {
             return (new ObjectMapper().writeValueAsString(this));
         }
 
+        /**
+         * Deserialization algorithm that builds the tree structure from a JSON String
+         * @param jsonString JSON String containing 4D Array that can be built back into a tree structure
+         * @return deserialized hashtree (not necessarily valid shape)
+         * @throws JsonProcessingException if the deserialization fails
+         */
         public static HashTree fromJSON(String jsonString) throws JsonProcessingException {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -420,6 +501,11 @@ public class Merkle {
         }
     }
 
+    /**
+     * fetches tree instance serialized into JSON string
+     * @return JSON String containing tree structure containing nodes as a JSON Array
+     * @throws JsonProcessingException if serialization fails
+     */
     public String getTreeJSON() throws JsonProcessingException {
         return tree.toJSON();
     }
@@ -458,14 +544,28 @@ public class Merkle {
      */
     private static class CustomMerkSerializer extends StdSerializer<Merkle> {
 
+        /**
+         * Constructor calling super
+         */
         public CustomMerkSerializer() {
             this(null);
         }
 
+        /**
+         * Constructor calling  super
+         * @param t handled Type (see super)
+         */
         protected CustomMerkSerializer(Class<Merkle> t) {
             super(t);
         }
 
+        /**
+         * serialization process for this class
+         * @param value instance to serialize
+         * @param gen generator
+         * @param provider provider
+         * @throws IOException upon low-level IO/encoding error
+         */
         @Override
         public void serialize(Merkle value, JsonGenerator gen, SerializerProvider provider) throws IOException {
             if (value.getSignature() == null || value.getCert() == null) throw new IOException();
@@ -503,14 +603,28 @@ public class Merkle {
      */
     private static class CustomMerkDeserializer extends StdDeserializer<Merkle> {
 
+        /**
+         * Constructor calling super
+         */
         public CustomMerkDeserializer() {
             this(null);
         }
 
+        /**
+         * Constructor calling super
+         * @param vc valueClass (see super)
+         */
         protected CustomMerkDeserializer(Class<?> vc) {
             super(vc);
         }
 
+        /**
+         * deserialization process for this class
+         * @param p Parser
+         * @param ctxt Context
+         * @return deserialized Instance
+         * @throws IOException upon low-level read issues
+         */
         @Override
         public Merkle deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 

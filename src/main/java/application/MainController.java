@@ -7,7 +7,13 @@ import htjsw.HTJWSBuilder;
 import htjsw.Merkle;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -25,43 +31,123 @@ import java.security.interfaces.ECPrivateKey;
 import java.text.ParseException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 
+/*
+ *    hashtreesig, a GUI for signing multiple Files using a Merkle Hash Tree and EC-SHA256
+ *    Copyright (C) 2022  F. Krause
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 /**
  * Controller zwischen Programm und GUI
- * @author F. Krause, SMSB HOST
+ * @author F. Krause
  */
 public class MainController {
-
+    /**
+     * Menu Bar containing Menus for Keystore, View and Help
+     */
     public MenuBar menu;
-    public MenuItem full, comp, max, certs, about, delete;
-    public Button outpDirBut, closeBut, fileSelBut, verify, gen, genfilesel, treesel, genoutp, verSel;
 
+    /**
+     * Menu Item that toggles window resizing process
+     */
+    public MenuItem full, comp, max;
+
+    /**
+     * Menu Item that toggles program internal process
+     */
+    @FXML private MenuItem certs, about, delete;
+
+    /**
+     * Button that toggles File Selection process
+     */
+    public Button outpDirBut, closeBut, fileSelBut, genfilesel, treesel, genoutp, verSel;
+
+    /**
+     * Button that toggles an internal process
+     */
+    @FXML private Button signBut, gen, verify, clear, genClear;
+
+    /**
+     * rolling selector that shows the available keypairs in the keystore
+     */
     @FXML private ChoiceBox<String> keyChoice;
 
+    /**
+     * variable for output directory
+     */
     private File outpDir,  genOutpDir;
+
+    /**
+     * shows selected output directory
+     */
     @FXML private TextField outpDirShow, gendirtext;
+
+    /**
+     * shows certificate extracted from the selected signature
+     */
     @FXML private TextArea sigshow;
+
+    /**
+     * Label for outputting verification results
+     */
     @FXML private Label verifyout;
 
+    /**
+     * ListView that shows selected files
+     */
     @FXML private ListView<File> fileList, GenList;
 
+    /**
+     * used for showing if a (valid) file has been selected
+     */
     @FXML private CheckBox treeCheck, sigcheck;
 
-    @FXML private Button signBut;
+    /**
+     * progress bars showing process progress
+     */
     @FXML private ProgressBar sigProg, genbar;
 
+    /**
+     * Hashtree generated from json file for signature generation
+     */
     private Merkle genTree;
+
+    /**
+     * variable for holding jws'
+     */
     private JWSObject jws;
+
+    /**
+     * holds keystore state upon program load
+     */
     private KeyStore ks;
 
+    /**
+     * called by fxmlloader upon controller initialization
+     */
     public void initialize() {
 
         delete.setOnAction(event -> {
+
             Optional<ButtonType> conf = new Alert(
                     Alert.AlertType.CONFIRMATION,
                     "Do you wish completely delete your current Key Archive? You will not be able to restore it."
             ).showAndWait();
+
             if (conf.isPresent() && conf.get() == ButtonType.OK) {
 
                 try {
@@ -75,11 +161,14 @@ public class MainController {
             }
         });
 
-        String abttxt = "";
-        try {
-            abttxt = Files.readString(Paths.get(getClass().getResource("/about.txt").toURI()));
+        certs.setOnAction(this::openCertsWindow);
 
-        } catch (IOException | URISyntaxException e) {
+        String abttxt = "";
+
+        try {
+            abttxt = Files.readString(Paths.get(Objects.requireNonNull(getClass().getResource("/about.txt")).toURI()));
+
+        } catch (IOException | URISyntaxException | NullPointerException e) {
 
             System.err.println("about text gone");
         }
@@ -87,10 +176,28 @@ public class MainController {
         String finalAbttxt = abttxt;
         about.setOnAction(event -> new Alert(Alert.AlertType.INFORMATION, finalAbttxt).showAndWait());
 
+        loadKS();
+
+        signBut.setOnAction(this::sign);
+        clear.setOnAction(event -> fileList.getItems().clear());
+
+        gen.setOnAction(this::generate);
+        genClear.setOnAction(event -> GenList.getItems().clear());
+
+        verify.setOnAction(this::verify);
+    }
+
+    /**
+     * method that (re)loads the keystore from files
+     */
+    private void loadKS() {
         boolean retry;
-        do{
+
+        do {
             retry = false;
-            try{
+
+            try {
+
                 ks = KeyStore.getInstance("PKCS12");
                 ks.load(new FileInputStream("keystore.jsk"), Main.enterPW());
 
@@ -116,18 +223,58 @@ public class MainController {
                     retry = true;
                 }
             }
-        } while(retry);
 
-        signBut.setOnAction(this::sign);
-        gen.setOnAction(this::generate);
-        verify.setOnAction(this::verify);
+        } while(retry);
     }
 
+    /**
+     * executes on menu use, opens utility for managing keystore and pauses main window till done
+     * @param actionEvent called by UI Event
+     */
+    private void openCertsWindow(ActionEvent actionEvent) {
+
+        try {
+            FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(this.getClass().getResource("/certs.fxml")));
+            Parent root = loader.load();
+            CertsController cont = loader.getController();
+
+            Scene scene = new Scene(root);
+            Stage certStage = new Stage();
+            certStage.setTitle("Merkle Keystore Management");
+            certStage.initStyle(StageStyle.UTILITY);
+            certStage.setScene(scene);
+
+            cont.cancel.setOnAction(event -> certStage.close());
+            certStage.showAndWait();
+
+            loadKS();
+
+        } catch (IOException e) {
+
+            System.err.println("Failed to load utility FXML file");
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "There has been a program error, please try reinstalling").showAndWait();
+        }
+    }
+
+    /**
+     * signing process called by button press.
+     * checks if output directory and keypair are selected, asks for password for key use,
+     * constructs and signs the hashtree from the files and saves it into the  output directory serialized into json format.
+     * progress is output using the  progress bar
+     * @param actionEvent called on UI action
+     */
     private void sign(ActionEvent actionEvent) {
         sigProg.setProgress(-1);
 
         if (keyChoice.getSelectionModel().getSelectedItem().isEmpty()) {
             new Alert(Alert.AlertType.ERROR, "No valid key pair has been selected!").showAndWait();
+            sigProg.setProgress(0);
+            return;
+        }
+
+        if (outpDir == null) {
+            new Alert(Alert.AlertType.ERROR, "No Output directory has been selected!").showAndWait();
             sigProg.setProgress(0);
             return;
         }
@@ -186,6 +333,12 @@ public class MainController {
         }
     }
 
+    /**
+     * signature generation process called by button press.
+     * checks if source tree and output directory have been selected,
+     * generates JSWs for the selected files one after the other
+     * @param actionEvent called on UI action
+     */
     private void generate(ActionEvent actionEvent) {
 
         genbar.setProgress(-1);
@@ -238,7 +391,18 @@ public class MainController {
         new Alert(Alert.AlertType.INFORMATION, "Signature Generation successful!");
     }
 
+    /**
+     * verification process called by button press.
+     * checks if signature file has been selected and uses JOSE library functionality and custom verifier class
+     * @param actionEvent called on UI action
+     */
     private void verify(ActionEvent actionEvent) {
+
+        if(jws == null) {
+
+            new Alert(Alert.AlertType.ERROR, "No Signature is selected").showAndWait();
+            return;
+        }
 
         try {
 
@@ -253,6 +417,10 @@ public class MainController {
         }
     }
 
+    /**
+     * called by application upon JWS file selection
+     * @param file file passed from filechooser by main application
+     */
     public void parseJWS(File file) {
 
         try {
@@ -269,6 +437,10 @@ public class MainController {
         }
     }
 
+    /**
+     * called by application upon output directory selection
+     * @param file file Object passed from directorychooser
+     */
     public void setOutpDir(@Nullable File file) {
 
         if (file != null && file.isDirectory()) {
@@ -283,6 +455,10 @@ public class MainController {
         }
     }
 
+    /**
+     * called by application upon output directory selection
+     * @param file file Object passed from directorychooser
+     */
     public void setGenOutpDir(@Nullable File file) {
 
         if (file != null && file.isDirectory()) {
@@ -297,16 +473,28 @@ public class MainController {
         }
     }
 
+    /**
+     * called by the application whenever files are selected to be added to the signing tab file list
+     * @param files selected files passed by multiplefilechooser
+     */
     public void addFilesToSign(Collection<File> files) {
 
         fileList.getItems().addAll(files);
     }
 
+    /**
+     * called by the application whenever files are selected to be added to the generation tab file list
+     * @param files selected files passed by multiplefilechooser
+     */
     public void addFilesToGen(Collection<File> files) {
 
         GenList.getItems().addAll(files);
     }
 
+    /**
+     * called by application whenever a tree file is selected to be used in signature generation
+     * @param treeFile file passed by filechooser
+     */
     public void parseTreeJSON(File treeFile) {
 
         try {
