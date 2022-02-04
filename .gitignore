@@ -335,3 +335,6 @@ gradle-app.setting
 doc/
 /output/
 /keystore.jsk
+/src/dist/
+*.der
+*.pem

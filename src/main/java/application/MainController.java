@@ -52,7 +52,7 @@ import java.util.Optional;
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 /**
- * Controller zwischen Programm und GUI
+ * Controller between program and GUI
  * @author F. Krause
  */
 public class MainController {

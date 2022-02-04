@@ -129,7 +129,7 @@ public class Merkle {
     }
 
     /**
-     * Constructor.
+     * Base Constructor.
      * initiates Lists, instantiates Factories and sets base values for closed, initiated (both false)
      * @throws NoSuchAlgorithmException if I misspelled one of the Algorithms
      */
@@ -417,8 +417,8 @@ public class Merkle {
      * b    0       1       2       3       4       5       6       7
      */
     /**
-     * Hashtree structure class
-     * contains a 3-D Array of bytes
+     * Hashtree structure class.
+     * uses a 4-D Array of bytes (row -> node -> byte)
      */
     private static class HashTree {
 

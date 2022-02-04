@@ -1,4 +1,5 @@
 # hashtreesig (Java edition)
+
 This is an implementation of parallel signature generation using Merkle hashtree structure and EC-DSA Signatures.
 It has a simple, bare-bones GUI built using the OpenJFX Javafx package, 
 and utilizes the JSON Web Signature standard format by using the Nimbus JOSE + JWT library as a base.
@@ -16,13 +17,15 @@ It is distributed under an GNU General Public License. The license text can be f
 ## Documentation
 
 Most of the documentation was done using javadoc annotation. 
-The resulting Doc can be found [here](https://kellycolt.github.io/hashtreesig-java/hashtreesig.main/module-summary.html).
+The resulting Doc can be found 
+[here](https://kellycolt.github.io/hashtreesig-java/hashtreesig.main/module-summary.html) 
+or in the /docs directory.
 
 ## Aspect Notes
 
 ### Merkle Hashtree Structure
 
-Merkle Hash trees are binary trees in which every parent node contains a cryptographic hash of its children. 
+Merkle hash trees are binary trees in which every parent node contains a cryptographic hash of its children. 
 It allows efficient and secure verification of large data structures.
 
 For this implementation, SHA256 was used for all hashes.
@@ -32,7 +35,7 @@ For this implementation, SHA256 was used for all hashes.
 For our signature, ECDSA was chosen. ECDSA, aka Elliptic Curve DSA, is a variant of classic DSA (Digital Signature Algorithm), 
 which increases efficiency by using Elliptic Curves instead of relying upon modular exponentiation. 
 
-After the Hashtree Structure has been built, only its root node is signed. 
+After the Hash tree Structure has been built, only its root node is signed. 
 Using this single signature and the hashes that are combined into the original hash along the tree's branch, every leaf node can be verified. 
 Since Hash Algorithms are much less processing intensive than signing algorithms, this procedure saves resources opposed to signing each node separately.
 
@@ -68,7 +71,7 @@ These are used to then verify the signature passed in "ecdsa_sig".
 
 #### Example JWS
 
-The actual JWS are Base64URL-encoded and thus not human readable. 
+The actual JWS are Base64URL-encoded and thus not human-readable. 
 Here is a Decoded example (hash omitted): 
 ```
 {

@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'host.hashtreesig'
-version '1.0'
+version '1.2'
 
 repositories {
     mavenCentral()
@@ -34,6 +34,10 @@ application {
 javafx {
     version = "17"
     modules = [ 'javafx.controls', "javafx.fxml" ]
+}
+
+jar{
+    from "license.txt"
 }
 
 jlink {
